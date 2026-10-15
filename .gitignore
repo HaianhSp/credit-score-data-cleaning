@@ -1,0 +1,5 @@
+# Dữ liệu lớn: train.csv tải từ Kaggle; credit_features.csv sinh lại bằng notebook 3 (≈ 74 MB)
+data/train.csv
+data/credit_features.csv
+__pycache__/
+.ipynb_checkpoints/

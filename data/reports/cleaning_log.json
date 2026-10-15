@@ -1,0 +1,45 @@
+{
+ "placeholder": {
+  "SSN": 5572,
+  "Occupation": 7062,
+  "Credit_Mix": 20195,
+  "Payment_Behaviour": 7600,
+  "Changed_Credit_Limit": 2091,
+  "Amount_invested_monthly": 4305,
+  "Monthly_Balance": 9
+ },
+ "invalid": {
+  "Age": 2781,
+  "Num_Bank_Accounts": 1345,
+  "Num_Credit_Card": 2320,
+  "Interest_Rate": 2034,
+  "Num_of_Loan": 4348,
+  "Num_of_Delayed_Payment": 1380,
+  "Num_Credit_Inquiries": 1650,
+  "Total_EMI_per_month": 3164,
+  "Annual_Income": 999
+ },
+ "repaired": {
+  "Payment_Behaviour": 7600,
+  "Type_of_Loan": 11408,
+  "SSN": 5572,
+  "Occupation": 7062,
+  "Name": 9985,
+  "Credit_Mix": 20195,
+  "Annual_Income": 999,
+  "Interest_Rate": 2034,
+  "Outstanding_Debt": 0,
+  "Num_of_Delayed_Payment": 8382,
+  "Changed_Credit_Limit": 2091,
+  "Num_Bank_Accounts": 1345,
+  "Num_Credit_Card": 2320,
+  "Age": 2781,
+  "Total_EMI_per_month": 3164,
+  "Monthly_Inhand_Salary": 15002,
+  "Num_Credit_Inquiries": 3615,
+  "Num_of_Loan": 4348,
+  "Credit_History_Age": 9030,
+  "Amount_invested_monthly": 8784,
+  "Monthly_Balance": 1209
+ }
+}

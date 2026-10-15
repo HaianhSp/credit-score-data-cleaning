@@ -1,0 +1,7 @@
+mô hình / dữ liệu,accuracy,macro-F1
+Đoán lớp phổ biến,0.529,0.23065184216263354
+"Logistic Regression – dữ liệu THÔ (S0, đặc trưng gốc)",0.6169,0.5867595219765239
+"Logistic Regression – dữ liệu SẠCH, đặc trưng gốc (S3)",0.66275,0.6433714654919249
+"HistGradientBoosting – dữ liệu THÔ (S0, đặc trưng gốc)",0.69975,0.6777512430899618
+"HistGradientBoosting – dữ liệu SẠCH, đặc trưng gốc (S3)",0.7045,0.6832021903469393
+"Random Forest (tuned), dữ liệu sạch + đặc trưng nhân quả (MÔ HÌNH CUỐI)",0.71425,0.6996129926509201

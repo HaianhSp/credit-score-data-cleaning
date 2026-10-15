@@ -1,0 +1,24 @@
+{
+ "model": "Random Forest (tuned)",
+ "params": {
+  "max_depth": 12,
+  "max_features": 0.3,
+  "min_samples_leaf": 9,
+  "n_estimators": 159
+ },
+ "class_weight": null,
+ "accuracy": 0.71425,
+ "macro_f1": 0.6996129926509201,
+ "roc_auc_ovr": 0.8610095125551043,
+ "log_loss": 0.6486251251469445,
+ "accuracy_ci95": [
+  0.7023162500000001,
+  0.7260862499999999
+ ],
+ "macro_f1_ci95": [
+  0.6846155359636991,
+  0.7114679932246734
+ ],
+ "n_test_rows": 20000,
+ "n_test_customers": 2500
+}
