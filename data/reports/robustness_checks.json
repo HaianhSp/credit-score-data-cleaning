@@ -1,0 +1,326 @@
+{
+ "mô hình": "Random Forest (tuned)",
+ "folds": {
+  "cv5": {
+   "không khách nào trùng giữa train và validation": true,
+   "các phần": [
+    {
+     "phần": 1,
+     "khách validation": 2000,
+     "lệch tỷ lệ nhãn lớn nhất so với toàn bộ (điểm %)": 0.0
+    },
+    {
+     "phần": 2,
+     "khách validation": 1999,
+     "lệch tỷ lệ nhãn lớn nhất so với toàn bộ (điểm %)": 0.02
+    },
+    {
+     "phần": 3,
+     "khách validation": 2000,
+     "lệch tỷ lệ nhãn lớn nhất so với toàn bộ (điểm %)": 0.01
+    },
+    {
+     "phần": 4,
+     "khách validation": 2001,
+     "lệch tỷ lệ nhãn lớn nhất so với toàn bộ (điểm %)": 0.02
+    },
+    {
+     "phần": 5,
+     "khách validation": 2000,
+     "lệch tỷ lệ nhãn lớn nhất so với toàn bộ (điểm %)": 0.02
+    }
+   ],
+   "lệch tỷ lệ nhãn lớn nhất (điểm %)": 0.02
+  },
+  "cv3 (chỉnh tham số)": {
+   "không khách nào trùng giữa train và validation": true,
+   "các phần": [
+    {
+     "phần": 1,
+     "khách validation": 3333,
+     "lệch tỷ lệ nhãn lớn nhất so với toàn bộ (điểm %)": 0.01
+    },
+    {
+     "phần": 2,
+     "khách validation": 3333,
+     "lệch tỷ lệ nhãn lớn nhất so với toàn bộ (điểm %)": 0.0
+    },
+    {
+     "phần": 3,
+     "khách validation": 3334,
+     "lệch tỷ lệ nhãn lớn nhất so với toàn bộ (điểm %)": 0.01
+    }
+   ],
+   "lệch tỷ lệ nhãn lớn nhất (điểm %)": 0.01
+  }
+ },
+ "regression": {
+  "giống hệt cc.clean() trên 8 tháng": true,
+  "số ô khác": 0
+ },
+ "timesplit": {
+  "huấn luyện": "tháng 1 đến 4 (50.000 dòng)",
+  "chấm điểm": "tháng 5 đến 8",
+  "cùng khách, tháng sau (giống test.csv)": {
+   "accuracy": 0.68446,
+   "macro_f1": 0.6692646249321497,
+   "recall_Poor": 0.6572052401746725,
+   "recall_Standard": 0.7106545961002786,
+   "recall_Good": 0.655223251895535
+  },
+  "khách chưa từng thấy, tháng sau": {
+   "accuracy": 0.6627,
+   "macro_f1": 0.6484797310361802,
+   "recall_Poor": 0.6363004172461753,
+   "recall_Standard": 0.6850271528316525,
+   "recall_Good": 0.6427845528455285
+  },
+  "luôn đoán lớp phổ biến của train, accuracy": 0.51696
+ },
+ "features": {
+  "tương quan Debt_to_Income_Ratio với Debt_to_Income đã có": 1.0,
+  "các bộ đặc trưng": {
+   "bộ chính (80 cột)": {
+    "số cột": 80,
+    "accuracy": {
+     "mean": 0.7102129336251084,
+     "std": 0.0028735248216345136
+    },
+    "macro_f1": {
+     "mean": 0.6907200424797176,
+     "std": 0.0031666213293090463
+    },
+    "precision_Poor": {
+     "mean": 0.7310580483628746,
+     "std": 0.007667054834785374
+    },
+    "precision_Standard": {
+     "mean": 0.7574638462386402,
+     "std": 0.0038119216170830745
+    },
+    "precision_Good": {
+     "mean": 0.5716901953990161,
+     "std": 0.005991904227367614
+    },
+    "recall_Poor": {
+     "mean": 0.6588177823772396,
+     "std": 0.006286174359280734
+    },
+    "recall_Standard": {
+     "mean": 0.741112060749652,
+     "std": 0.007145632088768454
+    },
+    "recall_Good": {
+     "mean": 0.7017100672953568,
+     "std": 0.017354787107563857
+    },
+    "f1_Poor": {
+     "mean": 0.6930026666844923,
+     "std": 0.0027537229038980715
+    },
+    "f1_Standard": {
+     "mean": 0.7491821391566699,
+     "std": 0.0045874828137273055
+    },
+    "f1_Good": {
+     "mean": 0.6299753215979902,
+     "std": 0.008861257655441993
+    }
+   },
+   "bộ chính + 3 đặc trưng của đề": {
+    "số cột": 83,
+    "accuracy": {
+     "mean": 0.7092254771657442,
+     "std": 0.002951034239295229
+    },
+    "macro_f1": {
+     "mean": 0.689813392548713,
+     "std": 0.003834322114508184
+    },
+    "precision_Poor": {
+     "mean": 0.730412503652419,
+     "std": 0.007604090990969463
+    },
+    "precision_Standard": {
+     "mean": 0.7561668044685499,
+     "std": 0.0024358107254606387
+    },
+    "precision_Good": {
+     "mean": 0.5707454768257911,
+     "std": 0.006322352372567553
+    },
+    "recall_Poor": {
+     "mean": 0.6597629841070846,
+     "std": 0.006880594979559586
+    },
+    "recall_Standard": {
+     "mean": 0.7394449690231003,
+     "std": 0.007882100281422262
+    },
+    "recall_Good": {
+     "mean": 0.6995858247119754,
+     "std": 0.022427526803078468
+    },
+    "f1_Poor": {
+     "mean": 0.6932262616535574,
+     "std": 0.002502487364975388
+    },
+    "f1_Standard": {
+     "mean": 0.7476944688357232,
+     "std": 0.004677129730532409
+    },
+    "f1_Good": {
+     "mean": 0.6285194471568583,
+     "std": 0.011855294864460684
+    }
+   },
+   "bộ chính + Monthly_Gross_Income + Monthly_Savings": {
+    "số cột": 82,
+    "accuracy": {
+     "mean": 0.7097627522531881,
+     "std": 0.0034413568204150315
+    },
+    "macro_f1": {
+     "mean": 0.6902499723354415,
+     "std": 0.003781028580436298
+    },
+    "precision_Poor": {
+     "mean": 0.7301116142548139,
+     "std": 0.0072810366094757505
+    },
+    "precision_Standard": {
+     "mean": 0.7562342780713407,
+     "std": 0.004245425962010534
+    },
+    "precision_Good": {
+     "mean": 0.572766517272205,
+     "std": 0.006635539655909626
+    },
+    "recall_Poor": {
+     "mean": 0.6584740290163065,
+     "std": 0.006327816093928854
+    },
+    "recall_Standard": {
+     "mean": 0.7412051384814563,
+     "std": 0.007629367362953377
+    },
+    "recall_Good": {
+     "mean": 0.6994475828938254,
+     "std": 0.016690149803872515
+    },
+    "f1_Poor": {
+     "mean": 0.6923891394706925,
+     "std": 0.0026298551596273655
+    },
+    "f1_Standard": {
+     "mean": 0.7486266714810179,
+     "std": 0.005059644099077684
+    },
+    "f1_Good": {
+     "mean": 0.6297341060546142,
+     "std": 0.009438745442953679
+    }
+   }
+  },
+  "kết luận theo quy tắc (cao hơn ở cả 5 phần)": {
+   "bộ chính + 3 đặc trưng của đề": {
+    "chênh macro-F1 từng phần": [
+     0.00047,
+     -0.00199,
+     -0.00018,
+     -0.00302,
+     0.00018
+    ],
+    "số phần tốt hơn": 2,
+    "đưa vào bộ chính": false
+   },
+   "bộ chính + Monthly_Gross_Income + Monthly_Savings": {
+    "chênh macro-F1 từng phần": [
+     0.00074,
+     -0.00157,
+     0.00106,
+     -0.00035,
+     -0.00223
+    ],
+    "số phần tốt hơn": 2,
+    "đưa vào bộ chính": false
+   }
+  },
+  "chỉ số theo lớp của bộ chính trong CV": {
+   "accuracy": {
+    "mean": 0.7102129336251084,
+    "std": 0.0028735248216345136
+   },
+   "macro_f1": {
+    "mean": 0.6907200424797176,
+    "std": 0.0031666213293090463
+   },
+   "precision_Poor": {
+    "mean": 0.7310580483628746,
+    "std": 0.007667054834785374
+   },
+   "precision_Standard": {
+    "mean": 0.7574638462386402,
+    "std": 0.0038119216170830745
+   },
+   "precision_Good": {
+    "mean": 0.5716901953990161,
+    "std": 0.005991904227367614
+   },
+   "recall_Poor": {
+    "mean": 0.6588177823772396,
+    "std": 0.006286174359280734
+   },
+   "recall_Standard": {
+    "mean": 0.741112060749652,
+    "std": 0.007145632088768454
+   },
+   "recall_Good": {
+    "mean": 0.7017100672953568,
+    "std": 0.017354787107563857
+   },
+   "f1_Poor": {
+    "mean": 0.6930026666844923,
+    "std": 0.0027537229038980715
+   },
+   "f1_Standard": {
+    "mean": 0.7491821391566699,
+    "std": 0.0045874828137273055
+   },
+   "f1_Good": {
+    "mean": 0.6299753215979902,
+    "std": 0.008861257655441993
+   }
+  }
+ },
+ "imputer": {
+  "học trên mọi dòng": {
+   "accuracy": {
+    "mean": 0.7102129336251084,
+    "std": 0.0028735248216345136
+   },
+   "macro_f1": {
+    "mean": 0.6907200424797176,
+    "std": 0.0031666213293090463
+   }
+  },
+  "học lại trên phần train của từng phần CV": {
+   "accuracy": {
+    "mean": 0.7099752772844443,
+    "std": 0.0030899422516015513
+   },
+   "macro_f1": {
+    "mean": 0.690618875331005,
+    "std": 0.0034907161960995923
+   }
+  },
+  "chênh macro-F1 từng phần (học lại trừ cách thường)": [
+   0.00193,
+   -0.00133,
+   5e-05,
+   -0.00025,
+   -0.00092
+  ],
+  "chênh macro-F1 trung bình": -0.0001
+ }
+}
