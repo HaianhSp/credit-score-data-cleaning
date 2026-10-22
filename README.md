@@ -9,14 +9,14 @@ Bài toán là dự đoán điểm tín dụng `Credit_Score` (Poor, Standard ho
 
 Bộ dữ liệu có 100.000 dòng (12.500 khách, mỗi khách 8 tháng) và rất bẩn. Có giá trị giả (`_______`, `#F%$D@*&8`, `__10000__`, `-333…333`), số bị dính dấu `_`, giá trị vô lý (tuổi −500 và 8.698, 1.499 thẻ tín dụng, lãi suất 5.797%, EMI 82.331), ô thiếu, và các tháng của cùng một khách không nhất quán với nhau. Vì vậy phần chính của bài là phân tích và làm sạch dữ liệu. Mô hình học máy đặt ở cuối, chỉ dùng để đo việc làm sạch giúp được bao nhiêu.
 
-Mỗi bước là một notebook, và mỗi quyết định đều dựa trên số liệu đo được:
+Mỗi bước là một notebook dựa trên số liệu:
 
 ```
-train.csv (dữ liệu bẩn)
-   notebook 1: hiểu dữ liệu, phân tích khám phá (EDA)
-   notebook 2: làm sạch                          ->  credit_clean.csv
-   notebook 3: kiểm tra dữ liệu sạch, tạo đặc trưng  ->  credit_features.csv
-   notebook 4: mô hình và đánh giá
+train.csv (dữ liệu chưa qua làm sạch)
+   notebook 1: Hiểu dữ liệu, phân tích dữ liệu (EDA)
+   notebook 2: Làm sạch dữ liệu                       ->  credit_clean.csv
+   notebook 3: Kiểm tra dữ liệu sạch, tạo đặc trưng  ->  credit_features.csv
+   notebook 4: Xây dựng mô hình và đánh giá
 
 test.csv (không nhãn)
    make_submission.py: làm sạch, tạo đặc trưng, dự đoán  ->  outputs/submission.csv
@@ -29,7 +29,7 @@ test.csv (không nhãn)
 | `notebooks/1_data_understanding_eda.ipynb` | Từ điển dữ liệu, cấu trúc khách nhân tháng, đo từng loại lỗi bằng nhiều cách độc lập, bảng phát hiện, bằng chứng và quyết định |
 | `notebooks/2_data_cleaning.ipynb` | Làm sạch 6 bước. Cách điền ô thiếu được chọn bằng thí nghiệm che giá trị. Có 12 ràng buộc kiểm tra, báo cáo chất lượng trước và sau, xuất `credit_clean.csv` |
 | `notebooks/3_post_cleaning_features.ipynb` | Kiểm tra việc làm sạch có làm méo dữ liệu hoặc tạo tín hiệu giả không. Tạo 5 nhóm đặc trưng và đo giá trị của chúng. Xuất `credit_features.csv` |
-| `notebooks/4_modeling_evaluation.ipynb` | Thí nghiệm ablation theo từng mức làm sạch, so sánh mô hình, tối ưu siêu tham số, kết quả cuối trên tập giữ kín, độ quan trọng đặc trưng, phân tích lỗi |
+| `notebooks/4_modeling_evaluation.ipynb` | Thí nghiệm ablation theo từng mức làm sạch, so sánh mô hình, tối ưu tham số, kết quả cuối trên tập giữ kín, độ quan trọng đặc trưng, phân tích lỗi |
 | `src/credit_cleaning.py` | Code làm sạch, gồm hàm `clean()` chạy cả quy trình. Notebook 2 import và in code từ file này ra, nên code trong notebook luôn là code đang chạy |
 | `src/credit_features.py` | Code tạo đặc trưng |
 | `src/notebook_utils.py` | Hàm dùng chung cho các notebook (in code, màu biểu đồ, vài hàm thống kê) |
@@ -42,12 +42,12 @@ test.csv (không nhãn)
 | `data/credit_features.csv` | Dữ liệu sạch cộng 45 đặc trưng tự tạo, sinh lại bằng notebook 3 |
 | `data/credit_test_clean.csv` | 50.000 dòng của `test.csv` sau làm sạch |
 | `outputs/submission.csv` | File nộp bài: hai cột `ID`, `Credit_Score`, đủ 50.000 dòng theo thứ tự của `test.csv` |
-| `data/reports/` | Báo cáo chất lượng dữ liệu trước và sau, nhật ký làm sạch, các bảng kết quả mô hình, `submission_log.json` (cấu hình, seed, kiểm tra file nộp bài) và `robustness_checks.json` |
-| `run_all.sh`, `run.py` | Chạy lần lượt cả 4 notebook từ đầu đến cuối, rồi tạo file nộp bài nếu có `test.csv` |
+| `data/reports/` | Báo cáo chất lượng dữ liệu trước và sau, nhật ký làm sạch, các bảng kết quả mô hình, `submission_log.json` (cấu hình, seed, kiểm tra file output) và `robustness_checks.json` |
+| `run_all.sh`, `run.py` | Chạy lần lượt cả 4 notebook từ đầu đến cuối, rồi tạo file output nếu có `test.csv` |
 
 Cách chạy lại nằm ở mục 8.
 
-## 3. Phân tích dữ liệu và các quyết định làm sạch
+## 3. Phân tích dữ liệu và các làm sạch
 
 Dữ liệu không phải 100.000 quan sát độc lập mà là 12.500 khách, mỗi khách 8 tháng. Nhãn đổi chậm theo tháng và lệch lớp (Standard 53%, Poor 29%, Good 18%). Có hai hệ quả:
 
@@ -77,7 +77,7 @@ Bảng dưới đây tóm tắt phát hiện, bằng chứng và quyết định
 
 Cột `Credit_Score` không được dùng ở bước làm sạch nào, để thông tin của nhãn không lọt vào đặc trưng.
 
-## 4. Làm sạch: kết quả và cách kiểm tra
+## 4. Làm sạch: kết quả và kiểm tra
 
 Cách điền ô thiếu được chọn bằng thí nghiệm (notebook 2, mục 4.2). Ta lấy các ô đã biết giá trị hợp lệ, che ngẫu nhiên 10%, điền lại bằng từng cách, rồi đo sai số NMAE = MAE/σ (0 là hoàn hảo, khoảng 0,8 là đoán bừa bằng trung vị). Thí nghiệm lặp với 3 hạt ngẫu nhiên. Cách tốt nhất của từng cột được so với kế hoạch khai báo trong module, và notebook dừng lại nếu hai bên không khớp.
 
@@ -99,7 +99,7 @@ Kiểm tra việc làm sạch có làm hỏng dữ liệu không (notebook 3):
 
 Hạn chế của `Monthly_Balance`: có 1.209 ô thiếu (1,2%) và chúng không phải mẫu ngẫu nhiên. Lương và đầu tư ở các dòng này cao hơn nhiều, và 73% thuộc nhóm `Low_spent_Small_value` (ở các dòng còn lại là 25%). Ở vùng lương cao, sai số của mô hình điền lớn hơn khoảng 2 đến 2,5 lần nhưng vẫn nhỏ hơn nhiều so với điền theo khách (0,136 so với 0,919). Tuy vậy, với các ô thiếu thật, nó dự đoán số dư ≤ 0 cho hơn một nửa, trong khi dữ liệu gốc không có số dư nào ≤ 0. Dấu hiệu này phù hợp với việc số dư bị bỏ trống vì nó ≤ 0 (thiếu không ngẫu nhiên). Đây chỉ là giả thuyết và không kiểm chứng được. Ảnh hưởng giới hạn ở khoảng 1,2% số dòng của một cột (xem phân tích lỗi ở notebook 4).
 
-## 5. Mô hình: việc làm sạch đóng góp bao nhiêu?
+## 5. Mô hình: việc làm sạch đóng góp gì ?
 
 Mô hình được đặt sau cùng, chỉ để đo giá trị của việc làm sạch (notebook 4).
 
@@ -143,11 +143,11 @@ Mô hình dựa vào gì và sai ở đâu (mục 4.8 và 4.9):
 - Theo tháng: accuracy khoảng 0,79 ở tháng 1 đến 3 và khoảng 0,67 ở tháng 4 đến 8. Tỷ lệ nhãn đổi nhảy lên khoảng 26 đến 27% ở tháng 4 và tháng 7 (các tháng khác 13 đến 15%), giải thích được một phần. Phần còn lại chưa xác định, có thể do cách dữ liệu tổng hợp được tạo ra. Theo `Credit_Mix`: 0,67 (Bad), 0,83 (Standard), 0,57 (Good), nhóm Good khó nhất.
 - Dòng phải sửa càng nhiều ô thì accuracy giảm nhẹ (0,720 xuống 0,699 từ 0 đến từ 3 ô), nhưng mức giảm chưa đạt ý nghĩa thống kê. Với 228 dòng có `Monthly_Balance` phải điền thì không kết luận được gì.
 
-## 6. Dự đoán test.csv và file nộp bài
+## 6. Dự đoán test.csv và file output
 
 `test.csv` không có nhãn, và kiểm tra cấu trúc cho thấy đây không phải khách mới. File có 50.000 dòng của đúng 12.500 khách trong `train.csv`, mỗi khách 4 tháng (September đến December), nối tiếp tháng 8 của train. ID dòng không trùng với train. Mức nhiễu giống train (ví dụ `Credit_Mix` bị thay bằng `_` ở 19,6% dòng test và 20,2% dòng train), và `Credit_History_Age` của mỗi khách tăng đúng 1 tháng mỗi tháng xuyên suốt 12 tháng ở cả 12.500 khách. Vì vậy các quy tắc làm sạch của train dùng lại được cho test.
 
-`python3 make_submission.py` (khoảng 2 phút) làm các bước sau:
+`python3 make_submission.py` làm các bước sau:
 
 1. Nối train (bỏ cột nhãn ngay lúc nối) và test thành chuỗi 12 tháng của mỗi khách, rồi làm sạch bằng đúng các bước của notebook 2 (`clean_panel` trong `src/credit_submission.py`). Khi đưa vào dữ liệu 8 tháng của train, hàm này cho kết quả giống hệt `cc.clean()` (đã kiểm tra, 0 ô khác). Kết quả đạt cả 12 ràng buộc kiểm tra.
 2. Tạo đặc trưng cho các dòng test. Đặc trưng theo thời gian chỉ nhìn tháng hiện tại và các tháng trước, nên tháng 9 nhìn được lịch sử từ tháng 1 đến 8. Ma trận đặc trưng không chứa nhãn hay cột định danh (`ID`, `Customer_ID`, `Name`, `SSN`), có `assert` kiểm tra. `Name` và `SSN` vẫn được làm sạch trong `credit_clean.csv` vì bài chấm phần làm sạch, nhưng không bao giờ là đặc trưng.
@@ -190,7 +190,7 @@ bash run_all.sh
 
 `run_all.sh` chạy lần lượt notebook 1 đến 4, mất khoảng 1 đến 1,5 giờ trên 2 CPU, phần lớn là notebook 4, rồi chạy `make_submission.py` (khoảng 2 phút) để tạo `outputs/submission.csv`. Cũng có thể mở từng notebook và chạy từ đầu đến cuối (Restart and Run All).
 
-Chỉ cần tạo lại file nộp bài (đã có `data/credit_clean.csv`) thì chạy `python3 make_submission.py`. Các kiểm tra bổ sung chạy riêng bằng `python3 check_robustness.py` (khoảng 20 phút, có thể chọn phần chạy bằng `--checks`).
+Chỉ cần tạo lại file output (đã có `data/credit_clean.csv`) thì chạy `python3 make_submission.py`. Các kiểm tra bổ sung chạy riêng bằng `python3 check_robustness.py` (khoảng 20 phút, có thể chọn phần chạy bằng `--checks`).
 
 Kết quả tái lập được: chạy lại notebook 2 cho ra `credit_clean.csv` giống hệt từng byte, chạy lại `make_submission.py` cho `submission.csv` giống hệt từng byte, và các hạt ngẫu nhiên đều được cố định (ghi trong `data/reports/submission_log.json`).
 
