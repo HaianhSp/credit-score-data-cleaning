@@ -1,8 +1,7 @@
 #!/bin/bash
-# Chạy lần lượt notebook 1, 2, 3, 4 từ đầu đến cuối, rồi tạo file nộp bài. Dừng ngay nếu một bước bị lỗi.
-# Cách dùng, từ thư mục gốc của dự án:  bash run_all.sh
-# Cần có data/train.csv (tải từ Kaggle) trước khi chạy. Có thêm data/test.csv thì tạo luôn outputs/submission.csv.
-# (check_robustness.py mất khoảng 20 đến 30 phút nên không nằm trong script này, chạy riêng nếu cần.)
+# Chạy notebook 1 đến 4 rồi tạo file output (cần data/train.csv, có thêm data/test.csv thì tạo luôn file output).
+# Chạy từ thư mục gốc: bash run_all.sh
+# check_robustness.py mất 20 đến 30 phút nên không nằm trong này.
 
 cd "$(dirname "$0")/notebooks" || exit 1
 
@@ -17,7 +16,7 @@ echo "Đã chạy xong cả 4 notebook"
 
 cd .. || exit 1
 if [ -f data/test.csv ]; then
-  python3 make_submission.py || { echo "Dừng: make_submission.py bị lỗi"; exit 1; }
+  python3 make_output.py || { echo "Dừng: make_output.py bị lỗi"; exit 1; }
 else
-  echo "Không thấy data/test.csv, bỏ qua bước tạo outputs/submission.csv"
+  echo "Không thấy data/test.csv, bỏ qua bước tạo outputs/output.csv"
 fi

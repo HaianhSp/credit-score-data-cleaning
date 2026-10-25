@@ -1,7 +1,6 @@
-"""Chạy một hoặc nhiều notebook từ đầu đến cuối và lưu lại kèm kết quả.
+"""Chạy notebook từ đầu đến cuối và lưu kèm kết quả. Dùng trong thư mục notebooks/:
 
-Cách dùng (từ thư mục notebooks/):  python3 ../run.py 1_data_understanding_eda.ipynb
-Nếu một ô bị lỗi thì notebook vẫn được lưu (để xem lỗi nằm ở đâu) và chương trình dừng với mã khác 0.
+    python3 ../run.py 1_data_understanding_eda.ipynb
 """
 import sys
 import time

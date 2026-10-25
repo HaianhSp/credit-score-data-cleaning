@@ -1,21 +1,8 @@
-"""
-Các kiểm tra bổ sung cho pipeline, tương ứng với các yêu cầu kiểm soát chất lượng thực nghiệm:
+"""Các kiểm tra thêm cho pipeline: folds, regression, imputer, features, timesplit.
+Kết quả ghi vào data/reports/robustness_checks.json. Chạy từ thư mục gốc:
 
-  folds        không khách nào nằm ở cả train và validation của mỗi phần CV, và các phần có giữ được tỷ lệ nhãn không
-  regression   hàm làm sạch 12 tháng (credit_submission.clean_panel) cho kết quả giống hệt cc.clean() trên 8 tháng
-  imputer      mô hình điền thiếu của hai cột tiền (HistGradientBoosting) là bước duy nhất của phần làm sạch học
-               xuyên khách hàng. Ở pipeline chính nó được học trên toàn bộ train (không dùng nhãn). Ở đây học lại chỉ
-               trên phần train của từng phần CV rồi so macro-F1 với cách thường
-  features     ba đặc trưng tài chính trong đề (Monthly_Gross_Income, Debt_to_Income_Ratio, Monthly_Savings)
-               có làm mô hình tốt hơn không. Quy tắc đặt trước khi chạy: chỉ đưa vào bộ chính nếu macro-F1 cao hơn
-               ở cả 5 phần CV
-  timesplit    test.csv là các tháng sau của cùng khách, còn CV chia theo khách. Ở đây giả lập đúng tình huống test:
-               huấn luyện trên tháng 1 đến 4, dự đoán tháng 5 đến 8 (có nhãn nên chấm điểm được)
-
-Cách chạy, từ thư mục gốc của dự án (cần data/train.csv, data/credit_clean.csv, data/credit_features.csv):
     python3 check_robustness.py                       # chạy tất cả, khoảng 30 phút
     python3 check_robustness.py --checks folds,timesplit
-Kết quả ghi vào data/reports/robustness_checks.json.
 """
 import argparse
 import json
@@ -33,7 +20,7 @@ sys.path.insert(0, str(ROOT / 'src'))
 
 import credit_cleaning as cc            # noqa: E402
 import credit_features as cf            # noqa: E402
-import credit_submission as cs          # noqa: E402
+import credit_output as cs          # noqa: E402
 
 DATA = ROOT / 'data'
 CLASSES = ['Poor', 'Standard', 'Good']
@@ -41,11 +28,7 @@ CLASS_CODES = [cs.LABEL_TO_CODE[c] for c in CLASSES]
 ALL_CHECKS = ['folds', 'regression', 'imputer', 'features', 'timesplit']
 
 
-# ---------------------------------------------------------------------------
-# Dữ liệu và cách chia giống hệt notebook 4
-# ---------------------------------------------------------------------------
 def load_inputs():
-    """Đọc dữ liệu và dựng lại đúng cách chia của notebook 4 (cùng seed, cùng tham số)."""
     raw = pd.read_csv(DATA / 'train.csv', low_memory=False)
     clean = pd.read_csv(DATA / 'credit_clean.csv')
     feat = pd.read_csv(DATA / 'credit_features.csv')
@@ -55,7 +38,6 @@ def load_inputs():
     train_idx, test_idx = next(GroupShuffleSplit(n_splits=1, test_size=0.20, random_state=42).split(clean, y_text, customer))
     y_train_text = y_text.iloc[train_idx].reset_index(drop=True)
     cust_train = customer.iloc[train_idx].reset_index(drop=True)
-    # nhãn dạng chữ để chia giống notebook 4 (thứ tự lớp khi chia phụ thuộc kiểu nhãn)
     folds5 = list(StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)
                   .split(np.zeros(len(y_train_text)), y_train_text, cust_train))
     folds3 = list(StratifiedGroupKFold(n_splits=3, shuffle=True, random_state=7)
@@ -65,14 +47,11 @@ def load_inputs():
 
 
 def final_model_factory():
-    """Mô hình cuối đã chọn ở notebook 4, dưới dạng hàm tạo mô hình mới."""
     name, params, class_weight = cs.load_chosen_model(DATA / 'reports' / 'final_test_metrics.json')
     return name, (lambda: cs.make_model(name, params, class_weight, seed=0))
 
 
 def fold_scores(make_model, X, y, folds):
-    """CV theo `folds` (danh sách (dòng huấn luyện, dòng validation) theo vị trí trong X). Trả về từng phần:
-    accuracy, macro-F1, precision/recall/F1 của từng lớp."""
     rows = []
     for fit_rows, val_rows in folds:
         model = make_model().fit(X.iloc[fit_rows], y.iloc[fit_rows])
@@ -87,7 +66,6 @@ def fold_scores(make_model, X, y, folds):
 
 
 def summarize(scores):
-    """Bảng điểm từng phần -> {chỉ số: {mean, std}}."""
     return {col: {'mean': float(scores[col].mean()), 'std': float(scores[col].std(ddof=0))} for col in scores.columns}
 
 
@@ -95,11 +73,7 @@ def say(text):
     print(text, flush=True)
 
 
-# ---------------------------------------------------------------------------
-# Kiểm tra 1: cách chia CV
-# ---------------------------------------------------------------------------
 def check_folds(inp):
-    """Mỗi phần CV: tập khách của train và validation phải rời nhau; ghi tỷ lệ nhãn từng phần để biết có giữ được không."""
     overall = inp['y_train_text'].value_counts(normalize=True)
     out = {}
     for name, folds in (('cv5', inp['folds5']), ('cv3 (chỉnh tham số)', inp['folds3'])):
@@ -119,9 +93,6 @@ def check_folds(inp):
     return out
 
 
-# ---------------------------------------------------------------------------
-# Kiểm tra 2: hàm làm sạch 12 tháng khớp với cc.clean() trên 8 tháng
-# ---------------------------------------------------------------------------
 def check_regression(inp):
     raw = inp['raw']
     expected = cc.clean(raw).drop(columns=cc.TARGET)
@@ -133,11 +104,7 @@ def check_regression(inp):
     return {'giống hệt cc.clean() trên 8 tháng': identical, 'số ô khác': differing}
 
 
-# ---------------------------------------------------------------------------
-# Kiểm tra 3: học lại mô hình điền thiếu chỉ trên phần train của từng phần CV
-# ---------------------------------------------------------------------------
 def prepare_before_money_fill(raw):
-    """Chạy pipeline làm sạch đến ngay trước bước điền hai cột tiền bằng mô hình (plan model_ratio rỗng)."""
     d = cc.add_month_num(raw.drop(columns=cc.TARGET))
     d = cc.mark_placeholders(d)
     d = cc.strip_numeric_text(d)
@@ -145,10 +112,8 @@ def prepare_before_money_fill(raw):
     return cc.repair(d, plan={**cc.REPAIR_PLAN, 'model_ratio': []})
 
 
+# fit_rows: các dòng mô hình được học, None là cách của pipeline chính
 def fill_money_columns(d_before, fit_rows=None):
-    """Điền Amount_invested_monthly và Monthly_Balance bằng cc.model_fill. fit_rows (mảng bool theo dòng) cho biết mô
-    hình chỉ được học từ những dòng nào. Cách làm: che giá trị của cột đang điền ở các dòng ngoài fit_rows để
-    cc.model_fill không học từ chúng, rồi chỉ lấy dự đoán cho các ô vốn bị thiếu. fit_rows=None là cách của pipeline chính."""
     d = d_before.copy()
     use = pd.Series(True, index=d.index) if fit_rows is None else pd.Series(fit_rows, index=d.index)
     for col in cc.REPAIR_PLAN['model_ratio']:
@@ -162,7 +127,7 @@ def check_imputer(inp, make_model):
     d_before = prepare_before_money_fill(raw)
 
     t = time.time()
-    clean_all = fill_money_columns(d_before)                      # cách của pipeline chính: học trên mọi dòng
+    clean_all = fill_money_columns(d_before)
     same_as_pipeline = clean_all.equals(cc.clean(raw).drop(columns=cc.TARGET))
     say(f'[imputer] dựng lại pipeline chính từng bước: giống hệt cc.clean() = {same_as_pipeline}')
     assert same_as_pipeline
@@ -173,7 +138,7 @@ def check_imputer(inp, make_model):
 
     refit_rows = []
     for k, (fit_rows, val_rows) in enumerate(inp['folds5'], 1):
-        fit_positions = train_idx[fit_rows]                        # vị trí trong bảng 100.000 dòng
+        fit_positions = train_idx[fit_rows]
         mask = np.zeros(len(raw), dtype=bool)
         mask[fit_positions] = True
         clean_k = fill_money_columns(d_before, fit_rows=mask)
@@ -195,11 +160,7 @@ def check_imputer(inp, make_model):
     return result
 
 
-# ---------------------------------------------------------------------------
-# Kiểm tra 4: ba đặc trưng tài chính trong đề
-# ---------------------------------------------------------------------------
 def spec_features(feat):
-    """Ba đặc trưng đề yêu cầu. Debt_to_Income_Ratio gần như trùng Debt_to_Income đã có (chỉ khác 1e-5 ở mẫu số)."""
     return pd.DataFrame({
         'Monthly_Gross_Income': feat['Annual_Income'] / 12,
         'Debt_to_Income_Ratio': feat['Outstanding_Debt'] / (feat['Annual_Income'] + 1e-5),
@@ -235,9 +196,6 @@ def check_features(inp, make_model):
             'kết luận theo quy tắc (cao hơn ở cả 5 phần)': verdict, 'chỉ số theo lớp của bộ chính trong CV': summarize(per_class)}
 
 
-# ---------------------------------------------------------------------------
-# Kiểm tra 5: chia theo thời gian (giống tình huống của test.csv)
-# ---------------------------------------------------------------------------
 def score_row(y_true, pred):
     p, r, f, _ = precision_recall_fscore_support(y_true, pred, labels=CLASS_CODES, zero_division=0)
     return {'accuracy': float(accuracy_score(y_true, pred)), 'macro_f1': float(f1_score(y_true, pred, average='macro')),
@@ -250,8 +208,6 @@ def check_timesplit(inp, make_model):
     label = raw.set_index('ID')[cc.TARGET]
     early = nolabel[nolabel['Month_Num'] <= 4]
 
-    # phần "huấn luyện" (tháng 1 đến 4) được làm sạch riêng, phần "test" (tháng 5 đến 8) làm sạch cùng lịch sử 1 đến 4,
-    # đúng như make_submission.py làm với train và test thật
     clean_early = cs.clean_panel(early)
     X_early = cs.feature_matrix(cf.build_features(clean_early))
     y_early = cs.encode_labels(pd.Series(label.loc[clean_early['ID']].to_numpy()))
@@ -261,11 +217,11 @@ def check_timesplit(inp, make_model):
     y_late = cs.encode_labels(pd.Series(label.loc[clean_8.loc[late, 'ID']].to_numpy()))
     cust_early, cust_late = clean_early['Customer_ID'].reset_index(drop=True), clean_8.loc[late, 'Customer_ID'].reset_index(drop=True)
 
-    # (i) cùng khách, tháng sau: giống tình huống test.csv
+    # (i) cùng khách, tháng sau (giống test.csv)
     same = make_model().fit(X_early, y_early)
     same_customers = score_row(y_late, same.predict(X_late))
 
-    # (ii) khách chưa từng thấy, tháng sau: huấn luyện trên 80% khách, chấm trên 20% khách còn lại
+    # (ii) khách chưa từng thấy, tháng sau: học trên 80% khách, chấm trên 20% còn lại
     fit_c, new_c = next(GroupShuffleSplit(n_splits=1, test_size=0.20, random_state=42).split(X_early, y_early, cust_early))
     new_customer_ids = set(cust_early.iloc[new_c])
     new_late = cust_late.isin(new_customer_ids).to_numpy()
@@ -283,7 +239,6 @@ def check_timesplit(inp, make_model):
     return result
 
 
-# ---------------------------------------------------------------------------
 def main(checks):
     start = time.time()
     inp = load_inputs()
@@ -295,7 +250,7 @@ def main(checks):
                'imputer': lambda: check_imputer(inp, make_model), 'features': lambda: check_features(inp, make_model),
                'timesplit': lambda: check_timesplit(inp, make_model)}
     path = DATA / 'reports' / 'robustness_checks.json'
-    if path.exists():                                     # chạy từng phần thì giữ kết quả các phần đã chạy trước
+    if path.exists():
         results.update(json.loads(path.read_text(encoding='utf-8')))
     for name in checks:
         t = time.time()

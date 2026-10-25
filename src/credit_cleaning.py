@@ -1,36 +1,15 @@
-"""
-Làm sạch dữ liệu Credit Score Classification (train.csv).
-
-File này chứa toàn bộ các hàm làm sạch. Notebook 2, 3, 4 đều import lại từ đây,
-nên code chỉ nằm ở một chỗ. Các hàm được xếp theo đúng thứ tự pipeline:
-
-    (chuẩn bị) add_month_num   thêm số thứ tự tháng (1 đến 8)
-    1. mark_placeholders       giá trị giả (vd "_______", "#F%$D@*&8") -> NaN
-    2. strip_numeric_text      bỏ dấu "_" thừa rồi ép kiểu số ("24_" -> 24)
-    3. mark_invalid            giá trị vô lý (ngoài miền hợp lệ, lệch quá xa) -> NaN
-    4. repair                  điền lại các ô NaN, mỗi cột một cách đã chọn bằng thí nghiệm ở notebook 2
-    (hoàn thiện) finalize      ép kiểu số nguyên, sắp lại thứ tự cột
-
-Bước 2 phải chạy sau bước 1, nếu không "__10000__" bị bỏ dấu "_" thành số 10000 trông như thật.
-
-Cột nhãn Credit_Score không được dùng ở bất kỳ bước nào, để tránh rò rỉ nhãn khi huấn luyện.
-"""
+"""Làm sạch train.csv, hàm clean() chạy cả quy trình."""
 import re
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 
-# ---------------------------------------------------------------------------
-# Hằng số (mỗi hằng số có bằng chứng ở notebook 1)
-# ---------------------------------------------------------------------------
 MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August']
 TARGET = 'Credit_Score'
 
-# Các cột lẽ ra là số nhưng bị lưu thành chữ, có dấu "_" dính ở đầu hoặc cuối
 NUMERIC_TEXT_COLS = ['Age', 'Annual_Income', 'Num_of_Loan', 'Num_of_Delayed_Payment', 'Changed_Credit_Limit',
                      'Outstanding_Debt', 'Amount_invested_monthly', 'Monthly_Balance']
 
-# Giá trị giả tìm được ở notebook 1 (mục 1.4)
 PLACEHOLDERS = {
     'SSN': '#F%$D@*&8',
     'Occupation': '_______',
@@ -41,8 +20,6 @@ PLACEHOLDERS = {
     'Monthly_Balance': '__-333333333333333333333333333__',
 }
 
-# Miền hợp lệ của các cột đếm. Cách tìm: lấy đoạn giá trị liền nhau mà mỗi giá trị xuất hiện
-# ít nhất 50 lần. Ngoài đoạn đó mỗi giá trị chỉ xuất hiện vài lần, nên là nhiễu (notebook 1, mục 1.5).
 DOMAIN = {
     'Age': (14, 56),
     'Num_Bank_Accounts': (0, 10),
@@ -52,10 +29,9 @@ DOMAIN = {
     'Num_of_Delayed_Payment': (0, 28),
     'Num_Credit_Inquiries': (0, 17),
 }
-EMI_MAX = 1800        # EMI thật lớn nhất trong dữ liệu là 1779, những số lớn hơn là nhiễu
-INCOME_REL_TOL = 0.5  # thu nhập năm lệch hơn 50% so với trung vị của chính khách đó thì coi là nhiễu
+EMI_MAX = 1800        # EMI thật lớn nhất là 1779
+INCOME_REL_TOL = 0.5  # thu nhập lệch quá 50% so với trung vị của khách thì bỏ
 
-# Mỗi cột được điền theo cách nào (chọn bằng thí nghiệm che 10% giá trị ở notebook 2)
 REPAIR_PLAN = {
     'cust_mode':   ['SSN', 'Occupation', 'Name', 'Credit_Mix'],
     'cust_median': ['Annual_Income', 'Interest_Rate', 'Outstanding_Debt',
@@ -65,7 +41,6 @@ REPAIR_PLAN = {
     'model_ratio': ['Amount_invested_monthly', 'Monthly_Balance'],
 }
 
-# Các cột đưa vào mô hình điền thiếu (không có Credit_Score)
 MODEL_IMPUTE_FEATURES = ['Annual_Income', 'Monthly_Inhand_Salary', 'Num_Bank_Accounts', 'Num_Credit_Card',
                          'Interest_Rate', 'Total_EMI_per_month', 'Outstanding_Debt', 'Age',
                          'Num_of_Delayed_Payment', 'Changed_Credit_Limit', 'Num_Credit_Inquiries',
@@ -84,21 +59,14 @@ FINAL_COLUMN_ORDER = [
     'Payment_Behaviour', 'Monthly_Balance', 'Credit_Score']
 
 
-# ---------------------------------------------------------------------------
-# Chuẩn bị: số thứ tự tháng
-# ---------------------------------------------------------------------------
 def add_month_num(d):
-    """Thêm cột Month_Num (1 đến 8). File đã sắp theo (Customer_ID, Month) nên cột này cũng là thứ tự thời gian."""
     d = d.copy()
     d['Month_Num'] = d['Month'].map({m: i + 1 for i, m in enumerate(MONTHS)}).astype(int)
     return d
 
 
-# ---------------------------------------------------------------------------
-# Bước 1: giá trị giả -> NaN
-# ---------------------------------------------------------------------------
+# Bước 1: giá trị giả thành NaN
 def mark_placeholders(d, log=None):
-    """Đổi các giá trị giả sang NaN. Nếu có `log` (dict) thì ghi số ô đã đổi của từng cột."""
     d = d.copy()
     for col, token in PLACEHOLDERS.items():
         is_fake = d[col] == token
@@ -108,27 +76,17 @@ def mark_placeholders(d, log=None):
     return d
 
 
-# ---------------------------------------------------------------------------
-# Bước 2: bỏ dấu "_" và ép kiểu số
-# ---------------------------------------------------------------------------
+# Bước 2: bỏ dấu _ rồi ép số. Phải chạy sau bước 1, không thì "__10000__" thành số 10000
 def strip_numeric_text(d):
-    """Bỏ dấu "_" ở đầu/cuối rồi ép sang số, ví dụ "24_" thành 24 và "14388.79_" thành 14388.79."""
     d = d.copy()
     for col in NUMERIC_TEXT_COLS:
         text = d[col].astype('string').str.replace(r'^_+|_+$', '', regex=True)
-        d[col] = pd.to_numeric(text, errors='coerce').astype('float64')  # float64 để còn chứa được NaN
+        d[col] = pd.to_numeric(text, errors='coerce').astype('float64')
     return d
 
 
-# ---------------------------------------------------------------------------
-# Bước 3: giá trị vô lý -> NaN
-# ---------------------------------------------------------------------------
+# Bước 3: giá trị vô lý thành NaN
 def mark_invalid(d, log=None):
-    """Đổi sang NaN những giá trị không thể là dữ liệu thật:
-    - cột đếm nằm ngoài miền DOMAIN
-    - Total_EMI_per_month quá lớn, hoặc là số nguyên dương (EMI thật là số lẻ dài, nên số tròn là nhiễu)
-    - Annual_Income lệch hơn 50% so với trung vị của chính khách đó (thu nhập năm không đổi trong 8 tháng)
-    """
     d = d.copy()
     log = {} if log is None else log
     invalid_count = log.setdefault('invalid', {})
@@ -139,7 +97,7 @@ def mark_invalid(d, log=None):
         d.loc[out_of_range, col] = np.nan
 
     emi = d['Total_EMI_per_month']
-    bad_emi = (emi > EMI_MAX) | ((emi > 0) & (emi == emi.round(0)))
+    bad_emi = (emi > EMI_MAX) | ((emi > 0) & (emi == emi.round(0)))  # EMI thật có số lẻ, số tròn là rác
     invalid_count['Total_EMI_per_month'] = int(bad_emi.sum())
     d.loc[bad_emi, 'Total_EMI_per_month'] = np.nan
 
@@ -150,13 +108,8 @@ def mark_invalid(d, log=None):
     return d
 
 
-# ---------------------------------------------------------------------------
-# Bước 4: điền lại các ô NaN
-# Các hàm dưới đây dùng chung cho pipeline và cho thí nghiệm so sánh cách điền ở notebook 2.
-# ---------------------------------------------------------------------------
+# Bước 4: điền ô thiếu
 def nearest_fill(d, col):
-    """Điền ô thiếu bằng giá trị hợp lệ ở tháng gần nhất của cùng khách. Cách đều thì lấy tháng trước.
-    Hợp với cột hay nhảy bậc (số tài khoản, lương, EMI) vì không kéo giá trị của giai đoạn này sang giai đoạn khác."""
     t = pd.DataFrame({'cust': d['Customer_ID'], 'month': d['Month_Num'], 'value': d[col]})
     t['valid_month'] = t['month'].where(t['value'].notna())
     by_cust = t.groupby('cust')
@@ -169,29 +122,21 @@ def nearest_fill(d, col):
 
 
 def most_common(s):
-    """Giá trị xuất hiện nhiều nhất của một Series (bỏ NaN). Không có giá trị nào thì trả về NaN."""
     modes = s.dropna().mode()
     return modes.iloc[0] if len(modes) else np.nan
 
 
 def payment_behaviour_code(d):
-    """Mã hóa Payment_Behaviour thành số (NaN thành -1) để làm đầu vào cho mô hình điền thiếu."""
     categories = sorted(d['Payment_Behaviour'].dropna().unique())
     return d['Payment_Behaviour'].map({c: i for i, c in enumerate(categories)}).fillna(-1)
 
 
 def salary_for_scaling(d):
-    """Lương tháng đã điền đủ, chặn dưới ở 1 để chia không bị lỗi. Dùng làm mẫu số cho các tỷ lệ so với lương."""
     return fill_numeric(d, 'Monthly_Inhand_Salary', 'nearest').clip(lower=1)
 
 
+# ratio=True: dự đoán tỷ lệ so với lương rồi nhân lại
 def model_fill(d, col, features=MODEL_IMPUTE_FEATURES, seed=0, ratio=False):
-    """Điền cột `col` bằng HistGradientBoostingRegressor, học từ các cột khác của cùng dòng.
-    Amount_invested_monthly và Monthly_Balance phụ thuộc nhiều vào lương và thói quen chi tiêu nên dùng cách này.
-
-    ratio=True: mô hình dự đoán tỷ lệ so với lương (col / lương) rồi nhân lại với lương.
-    Tiền đầu tư và số dư tăng theo thu nhập, nên tỷ lệ ổn định hơn giữa các mức lương. Ở thí nghiệm
-    notebook 2 (mục 4.2), cách này sai ít hơn dự đoán thẳng số tiền ở mọi mức lương."""
     X = d.assign(Payment_Behaviour_Code=payment_behaviour_code(d))[[f for f in features if f != col]]
     y = d[col]
     if ratio:
@@ -210,8 +155,6 @@ def model_fill(d, col, features=MODEL_IMPUTE_FEATURES, seed=0, ratio=False):
 
 
 def fill_numeric(d, col, strategy):
-    """Trả về cột số `col` đã điền theo `strategy`:
-    global_median | cust_median | nearest | interpolate | model | model_ratio"""
     s = d[col]
     if strategy == 'global_median':
         filled = s.fillna(s.median())
@@ -227,11 +170,10 @@ def fill_numeric(d, col, strategy):
         filled = model_fill(d, col, ratio=True)
     else:
         raise ValueError(strategy)
-    return filled.fillna(s.median())   # khách nào mất hết giá trị hợp lệ thì lấy trung vị chung
+    return filled.fillna(s.median())
 
 
 def fill_categorical(d, col, strategy):
-    """Trả về cột phân loại `col` đã điền theo `strategy`: global_mode | cust_mode | nearest"""
     s = d[col]
     if strategy == 'global_mode':
         filled = s.fillna(most_common(s))
@@ -246,27 +188,24 @@ def fill_categorical(d, col, strategy):
     return filled.fillna(most_common(s))
 
 
+# '22 Years and 9 Months' -> 273
 def parse_history_months(x):
-    """'22 Years and 9 Months' -> 273 (đổi ra tháng). Không đọc được thì trả về NaN."""
     m = re.match(r'(\d+) Years and (\d+) Months', str(x))
     return int(m.group(1)) * 12 + int(m.group(2)) if m else np.nan
 
 
 def split_loan_types(x):
-    """'Auto Loan, Credit-Builder Loan, and Home Equity Loan' -> ['Auto Loan', 'Credit-Builder Loan', 'Home Equity Loan']"""
     parts = re.split(r',\s*', str(x).replace(' and ', ' '))
     return [p.strip() for p in parts if p.strip()]
 
 
 def count_loan_types(x):
-    """Số loại khoản vay trong chuỗi Type_of_Loan. NaN hoặc 'No Loan' thì là 0."""
     if pd.isna(x) or x == 'No Loan':
         return 0
     return len(split_loan_types(x))
 
 
 def fill_columns(d, cols, strategy, log):
-    """Điền lần lượt các cột trong `cols` theo `strategy`, ghi số ô đã điền vào log."""
     for col in cols:
         log[col] = int(d[col].isna().sum())
         if strategy == 'cust_mode':
@@ -276,15 +215,11 @@ def fill_columns(d, cols, strategy, log):
 
 
 def rebuild_loan_count(d, log):
-    """Num_of_Loan = số loại khoản vay ghi trong Type_of_Loan. Ở dữ liệu hợp lệ hai cột này khớp 100%,
-    nên tính lại từ Type_of_Loan thay vì đoán."""
     log['Num_of_Loan'] = int(d['Num_of_Loan'].isna().sum())
     d['Num_of_Loan'] = d['Type_of_Loan'].map(count_loan_types)
 
 
 def rebuild_credit_history(d, log):
-    """Credit_History_Age tăng đúng 1 tháng mỗi tháng. Với mỗi khách, lấy (số tháng - thứ tự tháng) ở các
-    tháng còn đọc được, lấy trung vị, rồi suy ra giá trị cho tháng bị mất. Kết quả lưu ở Credit_History_Months."""
     months = d['Credit_History_Age'].map(parse_history_months)
     offset = (months - d['Month_Num']).groupby(d['Customer_ID']).transform('median')
     log['Credit_History_Age'] = int(months.isna().sum())
@@ -293,38 +228,31 @@ def rebuild_credit_history(d, log):
 
 
 def repair(d, plan=REPAIR_PLAN, log=None):
-    """Điền lại các ô NaN. Thứ tự các bước có ý nghĩa, vì bước sau dùng kết quả của bước trước."""
     d = d.copy()
     log = {} if log is None else log
     repaired = log.setdefault('repaired', {})
 
-    # Payment_Behaviour đổi ngẫu nhiên theo tháng, thí nghiệm ở notebook 2 cho thấy không cách điền nào
-    # đoán tốt hơn ngẫu nhiên. Nên giữ lại thông tin "không rõ" thành một nhóm riêng, không bịa giá trị.
+    # không cách nào đoán tốt hơn ngẫu nhiên nên giữ thành nhóm Unknown
     repaired['Payment_Behaviour'] = int(d['Payment_Behaviour'].isna().sum())
     d['Payment_Behaviour'] = d['Payment_Behaviour'].fillna('Unknown')
 
-    # Type_of_Loan trống nghĩa là khách không vay gì (trống cả 8 tháng và Num_of_Loan = 0, notebook 1 mục 1.3).
-    # Đây là giá trị thật nên điền 'No Loan', không điền bằng loại vay phổ biến nhất.
+    # trống nghĩa là khách không vay
     repaired['Type_of_Loan'] = int(d['Type_of_Loan'].isna().sum())
     d['Type_of_Loan'] = d['Type_of_Loan'].fillna('No Loan')
 
-    fill_columns(d, plan['cust_mode'], 'cust_mode', repaired)      # cột cố định theo khách
-    fill_columns(d, plan['cust_median'], 'cust_median', repaired)  # cột gần như không đổi theo khách
-    fill_columns(d, plan['nearest'], 'nearest', repaired)          # cột nhảy bậc theo thời gian
+    fill_columns(d, plan['cust_mode'], 'cust_mode', repaired)
+    fill_columns(d, plan['cust_median'], 'cust_median', repaired)
+    fill_columns(d, plan['nearest'], 'nearest', repaired)
 
     rebuild_loan_count(d, repaired)
     rebuild_credit_history(d, repaired)
 
-    # Hai cột tiền phụ thuộc vào lương và chi tiêu: điền bằng mô hình, sau khi các cột còn lại đã đủ
+    # hai cột tiền điền cuối vì cần các cột khác đã đủ
     fill_columns(d, plan['model_ratio'], 'model_ratio', repaired)
     return d
 
 
-# ---------------------------------------------------------------------------
-# Hoàn thiện
-# ---------------------------------------------------------------------------
 def finalize(d):
-    """Ép các cột đếm về số nguyên và sắp lại thứ tự cột."""
     d = d.copy()
     for col in INT_COLS:
         d[col] = d[col].round().astype(int)
@@ -332,7 +260,6 @@ def finalize(d):
 
 
 def clean(df_raw, return_log=False):
-    """Chạy cả pipeline: train.csv đọc thô -> dữ liệu sạch. return_log=True thì trả thêm dict thống kê."""
     log = {}
     d = add_month_num(df_raw)
     d = mark_placeholders(d, log)
@@ -343,11 +270,7 @@ def clean(df_raw, return_log=False):
     return (d, log) if return_log else d
 
 
-# ---------------------------------------------------------------------------
-# Kiểm tra kết quả
-# ---------------------------------------------------------------------------
 def validate_clean(d):
-    """12 kiểm tra ràng buộc trên dữ liệu đã sạch. Trả về dict {tên kiểm tra: True/False}."""
     by_cust = d.groupby('Customer_ID')
     return {
         'Không còn ô thiếu': int(d.isna().sum().sum()) == 0,

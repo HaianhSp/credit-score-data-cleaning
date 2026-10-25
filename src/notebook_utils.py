@@ -1,7 +1,4 @@
-"""
-Hàm dùng chung cho các notebook: kiểu biểu đồ, màu của từng nhãn, in code từ module ra màn hình,
-và vài hàm thống kê (tìm miền hợp lệ, độ lớn hiệu ứng).
-"""
+"""Hàm dùng chung cho các notebook: kiểu biểu đồ, màu nhãn, in code từ module, vài hàm thống kê."""
 import ast
 import inspect
 import numpy as np
@@ -9,22 +6,20 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy import stats
 
-LABELS = ['Poor', 'Standard', 'Good']                       # thứ tự từ thấp đến cao
+LABELS = ['Poor', 'Standard', 'Good']
 LABEL_RANK = {'Poor': 0, 'Standard': 1, 'Good': 2}
 COLORS = {'Poor': '#c0392b', 'Standard': '#f39c12', 'Good': '#27ae60'}
 
 
 def setup_style():
-    """Cài kiểu biểu đồ và cách hiển thị bảng cho cả notebook."""
     plt.rcParams.update({'figure.dpi': 110, 'axes.spines.top': False, 'axes.spines.right': False, 'font.size': 10})
     pd.set_option('display.max_columns', 50)
     pd.set_option('display.width', 170)
     pd.set_option('display.max_colwidth', 60)
 
 
+# in code của các hàm hoặc hằng số trong module theo tên
 def show_code(module, *names):
-    """In ra code của các hàm hoặc hằng số (theo tên) trong một module.
-    Dùng ở notebook để người đọc thấy đúng đoạn code đang chạy mà không phải mở file trong src/."""
     source = inspect.getsource(module)
     lines = source.splitlines()
     found = {}
@@ -37,7 +32,7 @@ def show_code(module, *names):
             continue
         start = node.lineno - 1
         while start > 0 and lines[start - 1].lstrip().startswith('#') and not lines[start - 1].startswith('# ---'):
-            start -= 1                                                    # lấy luôn phần comment ngay phía trên
+            start -= 1
         found[name] = '\n'.join(lines[start:node.end_lineno])
     missing = [n for n in names if n not in found]
     if missing:
@@ -45,10 +40,8 @@ def show_code(module, *names):
     print('\n\n'.join(found[n] for n in names))
 
 
+# tìm đoạn giá trị nguyên liền nhau, mỗi giá trị xuất hiện ít nhất min_count lần và chứa giá trị phổ biến nhất
 def body_run(counts, min_count=50):
-    """Tìm "thân" của một phân phối. `counts` là Series: số dòng của từng giá trị nguyên (index là giá trị).
-    Thân là đoạn giá trị liền nhau, mỗi giá trị xuất hiện ít nhất `min_count` lần và chứa giá trị phổ biến nhất.
-    Trả về (giá trị nhỏ nhất, giá trị lớn nhất) của đoạn đó."""
     frequent = set(counts[counts >= min_count].index)
     low = high = counts.idxmax()
     while low - 1 in frequent:
@@ -59,9 +52,6 @@ def body_run(counts, min_count=50):
 
 
 def effect_numeric(d, cols, target='Credit_Score'):
-    """Mức liên hệ của từng cột số với nhãn ba lớp. Bỏ qua ô NaN của cột đó.
-    - epsilon^2 từ kiểm định Kruskal-Wallis (H / (n - 1)): cho biết ba nhóm nhãn tách nhau bao nhiêu
-    - Spearman với nhãn xếp thứ tự Poor < Standard < Good"""
     y = d[target]
     rank = y.map(LABEL_RANK)
     rows = []
@@ -78,7 +68,6 @@ def effect_numeric(d, cols, target='Credit_Score'):
 
 
 def cramers_v(a, b):
-    """Hệ số Cramér's V giữa hai biến phân loại (0 là độc lập, 1 là phụ thuộc hoàn toàn)."""
     table = pd.crosstab(a, b)
     chi2 = stats.chi2_contingency(table)[0]
     n = table.values.sum()
