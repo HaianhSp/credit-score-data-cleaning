@@ -4,7 +4,7 @@ Môn Khai phá dữ liệu, Đại học Phenikaa. Sinh viên: Lê Nguyễn Hả
 
 Dữ liệu: [Credit Score Classification (Kaggle)](https://www.kaggle.com/datasets/parisrohan/credit-score-classification), gồm `train.csv` (có nhãn) và `test.csv` (không có nhãn).
 
-## 1. Đặt vấn đề bài toán 
+## 1. Bài này làm gì
 
 Bài toán là đoán `Credit_Score` của một khách hàng ngân hàng ở một tháng, có ba mức Poor, Standard và Good, dựa vào hồ sơ tài chính của khách trong tháng đó.
 
@@ -27,10 +27,10 @@ train.csv (dữ liệu bẩn)
    notebook 4: mô hình và đánh giá
 
 test.csv (không có nhãn)
-   make_submission.py: làm sạch, tạo đặc trưng, dự đoán  ->  outputs/submission.csv
+   make_output.py: làm sạch, tạo đặc trưng, dự đoán  ->  outputs/output.csv
 ```
 
-## 2. Cấu trúc thư mục 
+## 2. Có gì trong thư mục
 
 | Đường dẫn | Nội dung |
 |---|---|
@@ -41,17 +41,17 @@ test.csv (không có nhãn)
 | `src/credit_cleaning.py` | Code làm sạch, có hàm `clean()` chạy cả quy trình. Notebook 2 import và in code từ file này, nên code hiện trong notebook chính là code đang chạy |
 | `src/credit_features.py` | Code tạo đặc trưng |
 | `src/notebook_utils.py` | Hàm dùng chung cho các notebook (in code, màu biểu đồ, vài hàm thống kê) |
-| `src/credit_submission.py` | Hàm cho bước dự đoán test: làm sạch chuỗi 12 tháng, dựng ma trận đặc trưng, kiểm tra file nộp bài |
-| `make_submission.py` | Tạo `outputs/submission.csv` cho `test.csv` (mục 6) |
+| `src/credit_output.py` | Hàm cho bước dự đoán test: làm sạch chuỗi 12 tháng, dựng ma trận đặc trưng, kiểm tra file output |
+| `make_output.py` | Tạo `outputs/output.csv` cho `test.csv` (mục 6) |
 | `check_robustness.py` | Các kiểm tra thêm: cách chia CV, học lại mô hình điền thiếu theo từng phần CV, thử thêm ba đặc trưng, chia theo thời gian (mục 6) |
 | `data/train.csv` | Dữ liệu gốc tải từ Kaggle, không đưa lên kho mã |
 | `data/test.csv` | File test tải từ Kaggle, không đưa lên kho mã. Có 50.000 dòng, là 4 tháng sau (September đến December) của đúng 12.500 khách trong train |
 | `data/credit_clean.csv` | Dữ liệu sau làm sạch, 100.000 dòng, 29 cột, không còn ô thiếu, giá trị giả hay giá trị vô lý |
 | `data/credit_features.csv` | Dữ liệu sạch cộng 45 đặc trưng tự tạo, chạy lại notebook 3 là sinh ra |
 | `data/credit_test_clean.csv` | 50.000 dòng của `test.csv` sau làm sạch |
-| `outputs/submission.csv` | File nộp bài, hai cột `ID` và `Credit_Score`, đủ 50.000 dòng theo thứ tự của `test.csv` |
-| `data/reports/` | Báo cáo chất lượng dữ liệu trước và sau, nhật ký làm sạch, các bảng kết quả mô hình, `submission_log.json` (cấu hình, seed, kết quả kiểm tra file nộp bài) và `robustness_checks.json` |
-| `run_all.sh`, `run.py` | Chạy 4 notebook từ đầu đến cuối, rồi tạo file nộp bài nếu có `test.csv` |
+| `outputs/output.csv` | File output, hai cột `ID` và `Credit_Score`, đủ 50.000 dòng theo thứ tự của `test.csv` |
+| `data/reports/` | Báo cáo chất lượng dữ liệu trước và sau, nhật ký làm sạch, các bảng kết quả mô hình, `output_log.json` (cấu hình, seed, kết quả kiểm tra file output) và `robustness_checks.json` |
+| `run_all.sh`, `run.py` | Chạy 4 notebook từ đầu đến cuối, rồi tạo file output nếu có `test.csv` |
 
 Cách chạy lại ở mục 8.
 
@@ -158,16 +158,16 @@ Mô hình dựa vào gì và sai ở đâu (notebook 4, mục 4.8 và 4.9):
 
 `test.csv` không có nhãn, và kiểm tra cấu trúc cho thấy đây không phải khách mới. File có 50.000 dòng của đúng 12.500 khách trong `train.csv`, mỗi khách 4 tháng (September đến December), nối tiếp tháng 8 của train. ID dòng không trùng với train. Mức độ bẩn giống train (ví dụ `Credit_Mix` bị thay bằng `_` ở 19,6% dòng test và 20,2% dòng train), và `Credit_History_Age` của mỗi khách tăng đúng 1 tháng mỗi tháng suốt 12 tháng, đúng với cả 12.500 khách. Nên các quy tắc làm sạch của train dùng lại được cho test.
 
-`python3 make_submission.py` (khoảng 2 phút) làm các bước sau:
+`python3 make_output.py` (khoảng 2 phút) làm các bước sau:
 
-1. Nối train (bỏ cột nhãn ngay lúc nối) với test thành chuỗi 12 tháng của mỗi khách, rồi làm sạch bằng đúng các bước của notebook 2 (hàm `clean_panel` trong `src/credit_submission.py`). Khi đưa vào dữ liệu 8 tháng của train, hàm này cho kết quả giống hệt `cc.clean()` (đã kiểm tra, 0 ô khác). Kết quả đạt cả 12 điều kiện kiểm tra.
+1. Nối train (bỏ cột nhãn ngay lúc nối) với test thành chuỗi 12 tháng của mỗi khách, rồi làm sạch bằng đúng các bước của notebook 2 (hàm `clean_panel` trong `src/credit_output.py`). Khi đưa vào dữ liệu 8 tháng của train, hàm này cho kết quả giống hệt `cc.clean()` (đã kiểm tra, 0 ô khác). Kết quả đạt cả 12 điều kiện kiểm tra.
 2. Tạo đặc trưng cho các dòng test. Đặc trưng theo thời gian chỉ nhìn tháng hiện tại và các tháng trước, nên tháng 9 nhìn được lịch sử từ tháng 1 đến tháng 8. Ma trận đặc trưng không chứa nhãn hay cột định danh (`ID`, `Customer_ID`, `Name`, `SSN`), có `assert` kiểm tra. `Name` và `SSN` vẫn được làm sạch trong `credit_clean.csv` vì bài chấm phần làm sạch, nhưng không bao giờ làm đặc trưng.
 3. Lấy mô hình và siêu tham số đã chọn ở notebook 4 (đọc từ `data/reports/final_test_metrics.json`), huấn luyện lại trên toàn bộ 100.000 dòng train rồi dự đoán 50.000 dòng test. Khi huấn luyện, nhãn được mã hóa Poor = 0, Standard = 1, Good = 2 và đổi lại thành chữ khi xuất file (kết quả giống hệt khi huấn luyện bằng nhãn chữ).
-4. Ghi `outputs/submission.csv`, đọc lại từ đĩa và kiểm tra 7 điều: đúng hai cột, không có cột index, đúng số dòng, `ID` giống `test.csv` và cùng thứ tự, không mất hay trùng `ID`, nhãn chỉ gồm Poor, Standard, Good, và không có ô trống. Chạy hai lần cho file giống hệt từng byte.
+4. Ghi `outputs/output.csv`, đọc lại từ đĩa và kiểm tra 7 điều: đúng hai cột, không có cột index, đúng số dòng, `ID` giống `test.csv` và cùng thứ tự, không mất hay trùng `ID`, nhãn chỉ gồm Poor, Standard, Good, và không có ô trống. Chạy hai lần cho file giống hệt từng byte.
 
 Nhãn dự đoán trên test: Standard 50,5%, Poor 26,7%, Good 22,8% (train: 53,2%, 29,0%, 17,8%). Cũng mô hình này, khi chấm trên khách giữ kín ở notebook 4, dự đoán Good khoảng 22 đến 24% mỗi tháng, trong khi tỷ lệ Good thật của các khách đó tăng dần theo tháng (khoảng 16% ở tháng 1 lên 21% ở tháng 8). Tỷ lệ dự đoán trên test khớp với xu hướng này.
 
-**Điểm của file nộp bài.** Test không có nhãn nên không tính được accuracy cho file này ở máy. Điểm thật chỉ có khi nộp lên Kaggle. Hai con số dưới đây chỉ cho biết cỡ độ lớn:
+**Điểm của file output.** Test không có nhãn nên không tính được accuracy cho file này ở máy. Điểm thật chỉ có khi nộp lên Kaggle. Hai con số dưới đây chỉ cho biết cỡ độ lớn:
 
 - Khách giữ kín của notebook 4 (khách mới, đủ 8 tháng): accuracy 0,714, macro-F1 0,700.
 - Mô phỏng đúng tình huống của test (`check_robustness.py`): huấn luyện trên tháng 1 đến 4 của mọi khách, chấm trên tháng 5 đến 8 của cùng những khách đó. Accuracy 0,684, macro-F1 0,669, còn đoán Standard cho tất cả chỉ được 0,517. Mô hình ở đây chỉ có 4 tháng để học (bản thật có 8 tháng), và các tháng sau khó đoán hơn (notebook 4, mục 4.9: accuracy khoảng 0,79 ở tháng 1 đến 3 và 0,67 ở tháng 4 đến 8). Nếu chia theo thời gian mà lại với khách chưa từng thấy thì được 0,663 và 0,648, thấp hơn 2 điểm % so với cùng khách.
@@ -200,11 +200,11 @@ pip install pandas numpy scikit-learn scipy matplotlib seaborn nbformat nbclient
 bash run_all.sh
 ```
 
-`run_all.sh` chạy notebook 1 đến 4 lần lượt, mất khoảng 1 đến 1,5 giờ trên 2 CPU (phần lớn là notebook 4), rồi chạy `make_submission.py` (khoảng 2 phút) để tạo `outputs/submission.csv`. Cũng có thể mở từng notebook và chạy từ đầu đến cuối (Restart and Run All).
+`run_all.sh` chạy notebook 1 đến 4 lần lượt, mất khoảng 1 đến 1,5 giờ trên 2 CPU (phần lớn là notebook 4), rồi chạy `make_output.py` (khoảng 2 phút) để tạo `outputs/output.csv`. Cũng có thể mở từng notebook và chạy từ đầu đến cuối (Restart and Run All).
 
-Nếu chỉ cần tạo lại file nộp bài (đã có `data/credit_clean.csv`) thì chạy `python3 make_submission.py`. Các kiểm tra thêm chạy riêng bằng `python3 check_robustness.py` (khoảng 20 phút, chọn phần cần chạy bằng `--checks`).
+Nếu chỉ cần tạo lại file output (đã có `data/credit_clean.csv`) thì chạy `python3 make_output.py`. Các kiểm tra thêm chạy riêng bằng `python3 check_robustness.py` (khoảng 20 phút, chọn phần cần chạy bằng `--checks`).
 
-Kết quả chạy lại được: notebook 2 cho ra `credit_clean.csv` giống hệt từng byte, `make_submission.py` cho ra `submission.csv` giống hệt từng byte, và các hạt ngẫu nhiên đều được cố định (ghi trong `data/reports/submission_log.json`).
+Kết quả chạy lại được: notebook 2 cho ra `credit_clean.csv` giống hệt từng byte, `make_output.py` cho ra `output.csv` giống hệt từng byte, và các hạt ngẫu nhiên đều được cố định (ghi trong `data/reports/output_log.json`).
 
 Code làm sạch cũng dùng riêng được như một module:
 
