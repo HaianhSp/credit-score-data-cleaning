@@ -1,7 +1,7 @@
 #!/bin/bash
 # Chạy notebook 1 đến 4 rồi tạo file output (cần data/train.csv, có thêm data/test.csv thì tạo luôn file output).
 # Chạy từ thư mục gốc: bash run_all.sh
-# check_robustness.py mất 20 đến 30 phút nên không nằm trong này.
+# check_robustness.py mất khoảng 20 phút nên không nằm trong này.
 
 cd "$(dirname "$0")/notebooks" || exit 1
 
